@@ -51,6 +51,7 @@ FROM deps AS build
 COPY . .
 ENV NODE_ENV=production
 RUN pnpm run build
+RUN pnpm prune --prod
 
 FROM node:18-alpine AS runtime
 WORKDIR /app
@@ -61,8 +62,7 @@ RUN adduser --system --uid 1001 appuser
 
 COPY --from=build /app/package.json ./
 COPY --from=build /app/dist ./dist
-COPY --from=deps /app/node_modules ./node_modules
-RUN pnpm prune --prod
+COPY --from=build /app/node_modules ./node_modules
 
 RUN chown -R appuser:nodejs /app
 USER appuser

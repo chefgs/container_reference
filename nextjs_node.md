@@ -22,7 +22,8 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN NEXT_TELEMETRY_DISABLED=1 pnpm build
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm build
 
 FROM node:18-alpine AS runner
 WORKDIR /app
@@ -39,7 +40,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 
 USER nextjs
 EXPOSE 3000
-ENV PORT=3000
 CMD ["node", "server.js"]
 ```
 
