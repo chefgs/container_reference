@@ -16,11 +16,11 @@ By working through these guides, you will learn how to:
 
 1. **Angular + Node module**  
    Start here to learn separate frontend/backend containerization patterns:  
-   `/home/runner/work/container_reference/container_reference/angular_node.md`
+   `./angular_node.md`
 
 2. **Next.js + Node module**  
    Then learn optimized Next.js container builds and runtime patterns:  
-   `/home/runner/work/container_reference/container_reference/nextjs_node.md`
+   `./nextjs_node.md`
 
 ## Prerequisites
 
