@@ -2,6 +2,10 @@
 
 This repository is a hands-on learning space for building, optimizing, and running containers for modern JavaScript applications.
 
+## 🌐 Interactive Learning Site
+
+Open **[index.html](./index.html)** in your browser for the full interactive Docker learning guide — complete with a live architecture explorer, code examples, Docker Compose, Kubernetes manifests, init-container references, and copy-to-clipboard code blocks.
+
 ## Learning Goals
 
 By working through these guides, you will learn how to:
