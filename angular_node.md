@@ -49,7 +49,6 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
-ENV NODE_ENV=production
 RUN pnpm run build
 RUN pnpm prune --prod
 
