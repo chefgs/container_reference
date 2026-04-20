@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docker in Practice — Container Learning Guide</title>
+  <style>
+    /* ─── CSS custom properties ─────────────────────────────────── */
+    :root {
+      --bg-color: #f8f9fa;
+      --bg-card: #ffffff;
+      --text-main: #202124;
+      --text-muted: #5f6368;
+      --text-code: #d81b60;
+      --border-light: #e0e0e0;
+      --accent-blue: #1565c0;
+      --accent-green: #2e7d32;
+      --accent-orange: #e65100;
+      --accent-purple: #6a1b9a;
+      --host-bg: #e8f5e9;
+      --host-border: #81c784;
+      --engine-bg: #e3f2fd;
+      --engine-border: #64b5f6;
+      --container-bg: #fff8e1;
+      --container-border: #ffb300;
+      --k8s-bg: #f3e5f5;
+      --k8s-border: #ab47bc;
+      --code-bg: #1e1e2e;
+      --code-text: #cdd6f4;
+      --code-comment: #6c7086;
+      --code-keyword: #cba6f7;
+      --code-string: #a6e3a1;
+      --code-number: #fab387;
+      --hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --radius: 8px;
+      --transition: 0.2s ease;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #181825;
+      --bg-card: #1e1e2e;
+      --text-main: #cdd6f4;
+      --text-muted: #a6adc8;
+      --text-code: #f38ba8;
+      --border-light: #313244;
+      --accent-blue: #89b4fa;
+      --accent-green: #a6e3a1;
+      --accent-orange: #fab387;
+      --accent-purple: #cba6f7;
+      --host-bg: #1e3a2a;
+      --host-border: #40a868;
+      --engine-bg: #1a2744;
+      --engine-border: #4a8fd4;
+      --container-bg: #2a2210;
+      --container-border: #e0a020;
+      --k8s-bg: #2a1440;
+      --k8s-border: #a060d0;
+      --code-bg: #11111b;
+      --hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ─── Reset & Base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ─── Top Navigation ────────────────────────────────────────── */
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--accent-blue);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 56px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+
+    .nav-brand {
+      font-size: 1.1em;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-brand svg { flex-shrink: 0; }
+
+    .nav-links {
+      display: flex;
+      gap: 6px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.88em;
+      transition: background var(--transition);
+    }
+
+    .nav-links a:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    .theme-toggle {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85em;
+      transition: background var(--transition);
+    }
+
+    .theme-toggle:hover { background: rgba(255,255,255,0.28); }
+
+    /* ─── Page Layout ───────────────────────────────────────────── */
+    .page-wrapper {
+      display: flex;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+      gap: 28px;
+    }
+
+    /* ─── Sidebar TOC ───────────────────────────────────────────── */
+    .toc-sidebar {
+      flex: 0 0 240px;
+      position: sticky;
+      top: 76px;
+      height: fit-content;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 20px;
+      font-size: 0.85em;
+    }
+
+    .toc-sidebar h4 {
+      font-size: 0.8em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .toc-list { list-style: none; }
+    .toc-list li { margin-bottom: 4px; }
+    .toc-list a {
+      color: var(--text-muted);
+      text-decoration: none;
+      display: block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all var(--transition);
+      border-left: 2px solid transparent;
+    }
+
+    .toc-list a:hover,
+    .toc-list a.active {
+      color: var(--accent-blue);
+      background: var(--engine-bg);
+      border-left-color: var(--accent-blue);
+    }
+
+    .toc-list .toc-sub {
+      padding-left: 16px;
+      font-size: 0.92em;
+    }
+
+    @media (max-width: 900px) {
+      .toc-sidebar { display: none; }
+    }
+
+    /* ─── Main Article ──────────────────────────────────────────── */
+    .article-container {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 40px 44px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    @media (max-width: 640px) {
+      .article-container { padding: 24px 16px; }
+    }
+
+    h1 { font-size: 2em; color: var(--accent-blue); line-height: 1.25; margin-bottom: 12px; }
+    h2 {
+      font-size: 1.45em;
+      color: var(--accent-green);
+      margin-top: 48px;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border-light);
+      scroll-margin-top: 80px;
+    }
+
+    h3 {
+      font-size: 1.15em;
+      color: var(--accent-blue);
+      margin-top: 28px;
+      margin-bottom: 10px;
+      scroll-margin-top: 80px;
+    }
+
+    h4 { font-size: 1em; margin-top: 20px; margin-bottom: 8px; color: var(--text-muted); }
+
+    p { margin-bottom: 18px; color: var(--text-main); }
+
+    ul, ol { margin-bottom: 20px; padding-left: 28px; }
+    li { margin-bottom: 7px; }
+    li strong { color: var(--accent-blue); }
+
+    a { color: var(--accent-blue); }
+    a:hover { text-decoration: underline; }
+
+    .intro-text {
+      font-size: 1.08em;
+      color: var(--text-muted);
+      border-left: 4px solid var(--accent-blue);
+      padding-left: 18px;
+      margin-bottom: 32px;
+    }
+
+    hr { border: none; border-top: 1px solid var(--border-light); margin: 40px 0; }
+
+    /* ─── Inline Code ───────────────────────────────────────────── */
+    code {
+      background: var(--bg-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+      font-size: 0.9em;
+      color: var(--text-code);
+      border: 1px solid var(--border-light);
+    }
+
+    /* ─── Code Blocks ───────────────────────────────────────────── */
+    .code-block {
+      position: relative;
+      margin: 20px 0 28px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #313244;
+      padding: 8px 16px;
+    }
+
+    .code-lang {
+      font-size: 0.78em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #a6adc8;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #cdd6f4;
+      padding: 3px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8em;
+      transition: background var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .copy-btn:hover { background: rgba(255,255,255,0.2); }
+    .copy-btn.copied { background: #40a868; border-color: #40a868; }
+
+    .code-block pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 20px 22px;
+      overflow-x: auto;
+      font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+      font-size: 0.88em;
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    /* ─── Syntax highlight helpers ──────────────────────────────── */
+    .kw  { color: var(--code-keyword); font-weight: 600; }
+    .cm  { color: var(--code-comment); font-style: italic; }
+    .st  { color: var(--code-string); }
+    .nm  { color: var(--code-number); }
+    .op  { color: #89dceb; }
+    .lbl { color: #f9e2af; font-weight: 600; }
+
+    /* ─── Callout boxes ─────────────────────────────────────────── */
+    .callout {
+      display: flex;
+      gap: 14px;
+      padding: 16px 20px;
+      border-radius: var(--radius);
+      margin: 20px 0;
+      border-left: 4px solid;
+    }
+
+    .callout-icon { font-size: 1.3em; flex-shrink: 0; }
+    .callout-body { flex: 1; }
+    .callout-body p { margin: 0; font-size: 0.95em; }
+
+    .callout-info  { background: var(--engine-bg);    border-color: var(--engine-border);    }
+    .callout-warn  { background: var(--container-bg); border-color: var(--container-border); }
+    .callout-tip   { background: var(--host-bg);      border-color: var(--host-border);      }
+    .callout-k8s   { background: var(--k8s-bg);       border-color: var(--k8s-border);       }
+
+    /* ─── Resource table ────────────────────────────────────────── */
+    .resource-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 28px;
+      font-size: 0.92em;
+    }
+
+    .resource-table th {
+      background: var(--accent-blue);
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    .resource-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .resource-table tr:nth-child(even) td {
+      background: var(--bg-color);
+    }
+
+    /* ─── Interactive Architecture Dashboard ────────────────────── */
+    .interactive-section {
+      background: var(--bg-color);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      margin: 40px 0;
+      border: 1px solid var(--border-light);
+    }
+
+    .interactive-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .interactive-header h2 {
+      border: none;
+      margin: 0 0 8px;
+      color: var(--accent-blue);
+    }
+
+    .interactive-header p {
+      color: var(--text-muted);
+      font-size: 0.92em;
+      margin: 0;
+    }
+
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    @media (min-width: 850px) {
+      .dashboard { flex-direction: row; }
+    }
+
+    .architecture-view {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .info-panel {
+      flex: 1;
+      background: var(--bg-card);
+      padding: 22px;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border: 1px solid var(--border-light);
+      position: sticky;
+      top: 80px;
+      height: fit-content;
+    }
+
+    .info-panel h3 { margin-top: 0; color: var(--accent-blue); border-bottom: 2px solid var(--border-light); padding-bottom: 8px; }
+    .info-panel p  { font-size: 0.93em; color: var(--text-muted); margin-bottom: 10px; }
+    .info-panel ul { font-size: 0.9em; padding-left: 20px; color: var(--text-muted); }
+    .info-panel .info-placeholder { text-align: center; padding: 20px; color: var(--text-muted); font-style: italic; }
+
+    .layer-title {
+      font-size: 0.75em;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .arch-layer {
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 2px solid;
+    }
+
+    .host-layer    { background: var(--host-bg);    border-color: var(--host-border);    }
+    .engine-layer  { background: var(--engine-bg);  border-color: var(--engine-border);  }
+    .k8s-layer     { background: var(--k8s-bg);     border-color: var(--k8s-border);     }
+
+    .block-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .block {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 10px;
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      font-weight: 600;
+      font-size: 0.88em;
+      border: 2px solid;
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .block:hover  { transform: translateY(-3px); box-shadow: var(--hover-shadow); }
+    .block.active { outline: 3px solid var(--accent-blue); outline-offset: 2px; }
+
+    .block.host-block      { border-color: var(--host-border);      }
+    .block.engine-block    { border-color: var(--engine-border);     }
+    .block.container-block { border-color: var(--container-border);  }
+    .block.k8s-block       { border-color: var(--k8s-border);        }
+
+    /* ─── Tab component ─────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 0;
+      border-bottom: 2px solid var(--border-light);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 9px 18px;
+      cursor: pointer;
+      font-size: 0.88em;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      border-radius: 4px 4px 0 0;
+      transition: all var(--transition);
+    }
+
+    .tab-btn:hover  { color: var(--accent-blue); background: var(--engine-bg); }
+    .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: var(--engine-bg); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Role cards ────────────────────────────────────────────── */
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin: 20px 0;
+    }
+
+    .role-card {
+      background: var(--bg-color);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: box-shadow var(--transition);
+    }
+
+    .role-card:hover { box-shadow: var(--hover-shadow); }
+    .role-card .role-icon { font-size: 2em; margin-bottom: 10px; }
+    .role-card h4 { color: var(--accent-blue); margin-bottom: 8px; font-size: 1em; }
+    .role-card ul { font-size: 0.87em; color: var(--text-muted); padding-left: 18px; }
+
+    /* ─── Checklist ─────────────────────────────────────────────── */
+    .checklist {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0 24px;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      background: var(--bg-color);
+      border: 1px solid var(--border-light);
+      font-size: 0.93em;
+    }
+
+    .checklist li::before {
+      content: "✓";
+      color: var(--accent-green);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ─── Badges ────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-size: 0.77em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-blue   { background: var(--engine-bg);    color: var(--accent-blue);   border: 1px solid var(--engine-border);    }
+    .badge-green  { background: var(--host-bg);       color: var(--accent-green);  border: 1px solid var(--host-border);      }
+    .badge-orange { background: var(--container-bg);  color: var(--accent-orange); border: 1px solid var(--container-border); }
+    .badge-purple { background: var(--k8s-bg);        color: var(--accent-purple); border: 1px solid var(--k8s-border);       }
+
+    /* ─── Footer ────────────────────────────────────────────────── */
+    .site-footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85em;
+      padding: 32px 16px;
+      border-top: 1px solid var(--border-light);
+      margin-top: 20px;
+    }
+
+    .site-footer a { color: var(--accent-blue); }
+
+    /* ─── Progress bar ──────────────────────────────────────────── */
+    #reading-progress {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      height: 3px;
+      background: var(--accent-green);
+      transition: width 0.1s linear;
+      z-index: 200;
+      width: 0;
+    }
+
+    /* ─── Back-to-top ───────────────────────────────────────────── */
+    #back-to-top {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--accent-blue);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      font-size: 1.2em;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: transform var(--transition);
+    }
+
+    #back-to-top:hover { transform: translateY(-3px); }
+  </style>
+</head>
+<body>
+
+<!-- Reading-progress bar -->
+<div id="reading-progress"></div>
+
+<!-- ─── Navigation ──────────────────────────────────────────────── -->
+<nav class="site-nav" aria-label="Site navigation">
+  <div class="nav-brand">
+    <!-- Docker whale icon -->
+    <svg width="28" height="20" viewBox="0 0 50 35" fill="white" aria-hidden="true">
+      <path d="M27 12h4v4h-4v-4zm-5 0h4v4h-4v-4zm-5 0h4v4h-4v-4zm-5 0h4v4H12v-4zm10-5h4v4h-4V7zm-5 0h4v4h-4V7zm-5 0h4v4H12V7zm10-5h4v4h-4V2zm-5 0h4v4h-4V2zM4 17c-1.3 3.2.2 8 6 9.5C13 28 18 26 20 22c2-4-.2-8-4-9s-10-.8-12 4z"/>
+      <path d="M36 14c-1-1-3-1.5-5-1l-1 .3s-2-3-6-3c-1 0-2 .2-3 .7 0 0-1-1-3-1s-2 1-2 1-1-1-3 0c-2 2-2 6 0 8 2 3 6 4 9 4 3-.2 6-1 8-3 2-2 4-4 6-5z"/>
+    </svg>
+    Docker in Practice
+  </div>
+  <ul class="nav-links" role="list">
+    <li><a href="#section-install">Install</a></li>
+    <li><a href="#section-concepts">Concepts</a></li>
+    <li><a href="#section-run">Run</a></li>
+    <li><a href="#section-compose">Compose</a></li>
+    <li><a href="#section-kubernetes">Kubernetes</a></li>
+    <li><a href="#section-bestpractices">Best Practices</a></li>
+  </ul>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙 Dark</button>
+</nav>
+
+<!-- ─── Page Layout ─────────────────────────────────────────────── -->
+<div class="page-wrapper">
+
+  <!-- Sidebar TOC -->
+  <aside class="toc-sidebar" aria-label="Table of Contents">
+    <h4>Contents</h4>
+    <ul class="toc-list" id="tocList">
+      <li><a href="#top">Introduction</a></li>
+      <li><a href="#section-useful">1. What Docker is useful for</a></li>
+      <li><a href="#section-install">2. Installation</a></li>
+      <li class="toc-sub"><a href="#section-desktop">Docker Desktop</a></li>
+      <li class="toc-sub"><a href="#section-engine">Docker Engine</a></li>
+      <li><a href="#section-concepts">3. Core Concepts</a></li>
+      <li><a href="#section-run">4. Running Containers</a></li>
+      <li><a href="#section-runtime">5. Runtime Selection</a></li>
+      <li><a href="#section-resources">6. Resource Allocation</a></li>
+      <li><a href="#section-config">7. Configuration</a></li>
+      <li><a href="#section-cleanup">8. Image Cleanup</a></li>
+      <li><a href="#section-bestpractices">9. Best Practices</a></li>
+      <li><a href="#section-dockerfile">Dockerfile Samples</a></li>
+      <li><a href="#section-compose">10. Docker Compose</a></li>
+      <li><a href="#section-roles">11. Usage by Role</a></li>
+      <li><a href="#section-kubernetes">12. Docker &amp; Kubernetes</a></li>
+      <li><a href="#section-k8s-deploy">K8s Deployment</a></li>
+      <li><a href="#section-k8s-pod">Pod Config</a></li>
+      <li><a href="#section-k8s-init">Init Containers</a></li>
+      <li><a href="#section-localK8s">13. Local Kubernetes</a></li>
+      <li><a href="#section-model">14. Team Model</a></li>
+    </ul>
+  </aside>
+
+  <!-- ─── Main Article ─────────────────────────────────────────── -->
+  <main class="article-container" id="top">
+
+    <h1>Docker in Practice</h1>
+    <p class="intro-text">
+      Installation, Runtime Choices, Daily Usage, Cleanup, Best Practices,
+      and How It Fits with Kubernetes. A hands-on container learning guide.
+    </p>
+
+    <!-- ── Interactive Architecture Diagram ────────────────────── -->
+    <div class="interactive-section" id="architecture-diagram">
+      <div class="interactive-header">
+        <h2>🏗️ Container Architecture Explorer</h2>
+        <p>Click any block to learn about that component.</p>
+      </div>
+      <div class="dashboard">
+        <div class="architecture-view">
+
+          <!-- Host Layer -->
+          <div class="arch-layer host-layer">
+            <div class="layer-title">Your Machine / VM / CI Runner</div>
+            <div class="block-row">
+              <div class="block host-block" onclick="showInfo('host-os')">Host OS (Linux / macOS / Win)</div>
+              <div class="block host-block" onclick="showInfo('dockerd')">dockerd (daemon)</div>
+            </div>
+          </div>
+
+          <!-- Engine Layer -->
+          <div class="arch-layer engine-layer">
+            <div class="layer-title">Docker Engine Layer</div>
+            <div class="block-row">
+              <div class="block engine-block" onclick="showInfo('images')">Images</div>
+              <div class="block engine-block" onclick="showInfo('buildkit')">BuildKit</div>
+              <div class="block engine-block" onclick="showInfo('registry')">Registry</div>
+            </div>
+          </div>
+
+          <!-- Containers Layer -->
+          <div class="arch-layer" style="background:var(--container-bg);border:2px dashed var(--container-border)">
+            <div class="layer-title">Running Containers</div>
+            <div class="block-row">
+              <div class="block container-block" onclick="showInfo('container-app')">App Container</div>
+              <div class="block container-block" onclick="showInfo('container-db')">DB Container</div>
+              <div class="block container-block" onclick="showInfo('container-proxy')">Proxy/Cache</div>
+            </div>
+          </div>
+
+          <!-- Kubernetes Layer -->
+          <div class="arch-layer k8s-layer">
+            <div class="layer-title">Kubernetes (Orchestration)</div>
+            <div class="block-row">
+              <div class="block k8s-block" onclick="showInfo('k8s-pod')">Pod</div>
+              <div class="block k8s-block" onclick="showInfo('k8s-deploy')">Deployment</div>
+              <div class="block k8s-block" onclick="showInfo('k8s-service')">Service</div>
+              <div class="block k8s-block" onclick="showInfo('k8s-cri')">CRI Runtime</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Panel -->
+        <aside class="info-panel" id="infoPanel" aria-live="polite">
+          <h3 id="infoPanelTitle">Select a Component</h3>
+          <div id="infoPanelBody">
+            <p class="info-placeholder">👆 Click any coloured block to learn what it does and how to configure it.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-useful">1) What Docker Is Actually Useful For</h2>
+
+    <p>
+      At a practical level, Docker helps you package an application together
+      with its runtime dependencies and startup instructions so that the same
+      artifact can run more consistently in development, CI, test, and
+      production-like environments.
+    </p>
+
+    <ul class="checklist">
+      <li>Local development environments that are easier to reproduce</li>
+      <li>Isolated test environments per branch or PR</li>
+      <li>Packaging internal services and utilities</li>
+      <li>Standardizing build and deploy artifacts</li>
+      <li>Moving workloads into orchestrators such as Kubernetes</li>
+      <li>Reducing "works on my machine" drift between team members</li>
+    </ul>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-install">2) Docker Installation Explained</h2>
+
+    <h3 id="section-desktop">Docker Desktop</h3>
+    <p>
+      For most developers on macOS, Windows, or Linux workstations, Docker
+      Desktop is the normal starting point — a one-click install application
+      that lets you build, share, and run containerized applications.
+    </p>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <div class="callout-body">
+        <p>
+          <strong>Licensing note:</strong> Docker Desktop commercial use in
+          organizations with more than 250 employees or more than $10 million
+          in annual revenue requires a paid subscription.
+        </p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <p>
+          On Windows with WSL 2, do <em>not</em> install Docker Engine inside
+          WSL and also run Docker Desktop — this causes conflicts.
+          Use WSL 2.1.5+ for best results.
+        </p>
+      </div>
+    </div>
+
+    <h3 id="section-engine">Docker Engine</h3>
+    <p>
+      Docker Engine is the lower-level daemon/runtime stack commonly used on
+      Linux servers and cloud VMs — no Desktop UI, leaner, and with direct
+      host-level control.
+    </p>
+
+    <!-- Linux post-install quick steps -->
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash — Linux post-install</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="cm"># Add current user to the docker group (avoid sudo)</span>
+sudo usermod -aG docker $USER
+newgrp docker
+
+<span class="cm"># Enable Docker to start at boot</span>
+sudo systemctl enable docker.service
+sudo systemctl enable containerd.service
+
+<span class="cm"># Verify installation</span>
+docker version
+docker info</pre>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-concepts">3) Core Docker Concepts</h2>
+
+    <table class="resource-table">
+      <thead>
+        <tr><th>Term</th><th>What it is</th><th>Where problems usually live</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Image</strong></td>
+          <td>Packaged read-only template (layers)</td>
+          <td>Dockerfile, build context, cache</td>
+        </tr>
+        <tr>
+          <td><strong>Container</strong></td>
+          <td>Running (or stopped) instance of an image</td>
+          <td>Env vars, mounts, ports, startup command, logs</td>
+        </tr>
+        <tr>
+          <td><strong>daemon (dockerd)</strong></td>
+          <td>Background service that manages container lifecycle</td>
+          <td>daemon.json, system resources, socket permissions</td>
+        </tr>
+        <tr>
+          <td><strong>Registry</strong></td>
+          <td>Remote store for images (Docker Hub, ECR, GCR…)</td>
+          <td>Authentication, network access, tag policy</td>
+        </tr>
+        <tr>
+          <td><strong>Volume</strong></td>
+          <td>Persistent storage managed by Docker</td>
+          <td>Mount path, permissions, accidental prune</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-run">4) Running Images and Containers</h2>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash — day-to-day workflow</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="cm"># Verify Docker works</span>
+docker version
+docker info
+docker run hello-world
+
+<span class="cm"># Pull an image</span>
+docker pull nginx:latest
+
+<span class="cm"># Run a named container with port mapping (-d = detach)</span>
+docker run -d --name web -p 8080:80 nginx:latest
+
+<span class="cm"># Inspect running containers</span>
+docker ps
+docker ps -a          <span class="cm"># include stopped containers</span>
+
+<span class="cm"># Follow logs and get a shell</span>
+docker logs -f web
+docker exec -it web sh
+
+<span class="cm"># Stop and clean up</span>
+docker stop web
+docker rm web</pre>
+    </div>
+
+    <h3>Running Containers with Resource Limits</h3>
+    <p>
+      By default a container has no resource constraints and can use as much
+      CPU or memory as the host scheduler allows. Always set limits for
+      production-like and shared environments:
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash — resource-constrained container</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre>docker run -d \
+  --name api \
+  --memory="512m" \
+  --cpus="1.5" \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e NODE_ENV=production \
+  my-api:1.0</pre>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-runtime">5) Docker Runtime Selection</h2>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">✅</span>
+      <div class="callout-body">
+        <p>
+          <strong>Practical default:</strong> For normal development, CI, and
+          standard Linux server workloads, stick with the default Docker
+          runtime. Runtime complexity rarely adds value for ordinary
+          application teams.
+        </p>
+      </div>
+    </div>
+
+    <p>Runtime choice becomes important for:</p>
+    <ul>
+      <li>Higher isolation requirements (e.g., gVisor, Kata)</li>
+      <li>Special node-level sandboxing in regulated environments</li>
+      <li>Kubernetes <code>RuntimeClass</code> multi-runtime clusters</li>
+      <li>Platform engineering work at the node level</li>
+    </ul>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-resources">6) Resource Allocation in Docker Desktop</h2>
+
+    <table class="resource-table">
+      <thead>
+        <tr><th>Profile</th><th>CPUs</th><th>Memory</th><th>Disk</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Light local usage</td><td>2</td><td>4 GB</td><td>30–50 GB</td></tr>
+        <tr><td>Moderate dev stack</td><td>4</td><td>8–12 GB</td><td>60–100 GB</td></tr>
+        <tr><td>Heavy local platform</td><td>6–8</td><td>12–24 GB</td><td>100+ GB</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">💡</span>
+      <div class="callout-body">
+        <p>
+          Enable <strong>Resource Saver</strong> in Docker Desktop → it
+          automatically stops the Linux VM when no containers are running,
+          significantly reducing CPU and memory consumption on your laptop.
+        </p>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-config">7) Managing Docker Configuration Through Files</h2>
+
+    <p>
+      The JSON configuration file (<code>daemon.json</code>) is the preferred
+      option because it keeps settings in one place.
+      <strong>Do not</strong> specify the same option both as a flag and in the
+      JSON file — this prevents the daemon from starting.
+    </p>
+
+    <h3>daemon.json</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">json — /etc/docker/daemon.json</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre>{
+  <span class="lbl">"log-driver"</span>: <span class="st">"json-file"</span>,
+  <span class="lbl">"log-opts"</span>: {
+    <span class="lbl">"max-size"</span>: <span class="st">"10m"</span>,
+    <span class="lbl">"max-file"</span>: <span class="st">"3"</span>
+  },
+  <span class="lbl">"builder"</span>: {
+    <span class="lbl">"gc"</span>: {
+      <span class="lbl">"enabled"</span>: <span class="kw">true</span>,
+      <span class="lbl">"defaultKeepStorage"</span>: <span class="st">"20GB"</span>
+    }
+  },
+  <span class="lbl">"live-restore"</span>: <span class="kw">true</span>
+}</pre>
+    </div>
+
+    <h3>Proxy Configuration</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">json — daemon proxy settings</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre>{
+  <span class="lbl">"proxies"</span>: {
+    <span class="lbl">"http-proxy"</span>:  <span class="st">"http://proxy.example.com:3128"</span>,
+    <span class="lbl">"https-proxy"</span>: <span class="st">"http://proxy.example.com:3128"</span>,
+    <span class="lbl">"no-proxy"</span>:    <span class="st">"localhost,127.0.0.1,.internal.example.com"</span>
+  }
+}</pre>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-cleanup">8) Docker Image Cleanup and Disk Management</h2>
+
+    <p>
+      Docker takes a conservative approach to removing unused resources —
+      they are <em>not</em> removed unless you ask. Disk usage grows over time
+      without periodic pruning.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash — cleanup commands</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="cm"># Check disk usage first</span>
+docker system df
+
+<span class="cm"># Prune in layers (safest approach)</span>
+docker container prune     <span class="cm"># stopped containers</span>
+docker image prune         <span class="cm"># dangling images only</span>
+docker image prune -a      <span class="cm"># all unused images</span>
+docker network prune       <span class="cm"># unused networks</span>
+docker builder prune       <span class="cm"># build cache</span>
+
+<span class="cm"># Full nuke (add --volumes only when safe)</span>
+docker system prune -a
+docker system prune -a --volumes</pre>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <p>
+          Never run <code>docker volume prune</code> blindly — local
+          databases (Postgres, MySQL, etc.) live in volumes. Pruning them
+          deletes all local data permanently.
+        </p>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-bestpractices">9) Docker Best Practices That Actually Matter</h2>
+
+    <h3>Use Multi-Stage Builds</h3>
+    <p>
+      Multi-stage builds keep build tools out of runtime images, resulting in
+      smaller, cleaner, and more secure final images. This is the single
+      highest-value Dockerfile improvement most teams can make.
+    </p>
+
+    <h3 id="section-dockerfile">Dockerfile Samples</h3>
+
+    <!-- Tab: Dockerfile examples -->
+    <div class="tab-bar" role="tablist">
+      <button class="tab-btn active" role="tab" aria-selected="true"  onclick="switchTab(this,'tab-generic')">Generic Node.js</button>
+      <button class="tab-btn"        role="tab" aria-selected="false" onclick="switchTab(this,'tab-golang')">Go Service</button>
+      <button class="tab-btn"        role="tab" aria-selected="false" onclick="switchTab(this,'tab-python')">Python API</button>
+    </div>
+
+    <div id="tab-generic" class="tab-panel active">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">dockerfile — Node.js multi-stage</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+        </div>
+        <pre><span class="cm"># ── Stage 1: install dependencies ────────────────────────────────</span>
+<span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> deps
+<span class="kw">WORKDIR</span> /app
+<span class="kw">RUN</span> npm install -g pnpm
+<span class="kw">COPY</span> package.json pnpm-lock.yaml* ./
+<span class="kw">RUN</span> pnpm install --frozen-lockfile
+
+<span class="cm"># ── Stage 2: build ───────────────────────────────────────────────</span>
+<span class="kw">FROM</span> deps <span class="kw">AS</span> build
+<span class="kw">COPY</span> . .
+<span class="kw">ENV</span> NODE_ENV=production
+<span class="kw">RUN</span> pnpm build && pnpm prune --prod
+
+<span class="cm"># ── Stage 3: lean runtime image ──────────────────────────────────</span>
+<span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> runtime
+<span class="kw">WORKDIR</span> /app
+<span class="kw">ENV</span> NODE_ENV=production
+
+<span class="cm"># Non-root user for security</span>
+<span class="kw">RUN</span> addgroup --system --gid 1001 nodejs \
+ && adduser  --system --uid 1001 appuser
+
+<span class="kw">COPY</span> --from=build --chown=appuser:nodejs /app/dist        ./dist
+<span class="kw">COPY</span> --from=build --chown=appuser:nodejs /app/node_modules ./node_modules
+<span class="kw">COPY</span> --from=build --chown=appuser:nodejs /app/package.json ./
+
+<span class="kw">USER</span> appuser
+<span class="kw">EXPOSE</span> 3000
+<span class="kw">CMD</span> ["node", "dist/main.js"]</pre>
+      </div>
+    </div>
+
+    <div id="tab-golang" class="tab-panel">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">dockerfile — Go multi-stage</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+        </div>
+        <pre><span class="cm"># ── Stage 1: build Go binary ─────────────────────────────────────</span>
+<span class="kw">FROM</span> golang:1.22-alpine <span class="kw">AS</span> builder
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> go.mod go.sum ./
+<span class="kw">RUN</span> go mod download
+<span class="kw">COPY</span> . .
+<span class="kw">RUN</span> CGO_ENABLED=0 GOOS=linux go build -o /bin/server ./cmd/server
+
+<span class="cm"># ── Stage 2: minimal runtime (distroless) ────────────────────────</span>
+<span class="kw">FROM</span> gcr.io/distroless/static-debian12
+<span class="kw">COPY</span> --from=builder /bin/server /server
+<span class="kw">EXPOSE</span> 8080
+<span class="kw">ENTRYPOINT</span> ["/server"]</pre>
+      </div>
+    </div>
+
+    <div id="tab-python" class="tab-panel">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">dockerfile — Python FastAPI</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+        </div>
+        <pre><span class="cm"># ── Stage 1: dependency builder ──────────────────────────────────</span>
+<span class="kw">FROM</span> python:3.12-slim <span class="kw">AS</span> builder
+<span class="kw">WORKDIR</span> /app
+<span class="kw">RUN</span> pip install --no-cache-dir poetry==1.8.3
+<span class="kw">COPY</span> pyproject.toml poetry.lock ./
+<span class="kw">RUN</span> poetry config virtualenvs.in-project true \
+ && poetry install --only main --no-interaction
+
+<span class="cm"># ── Stage 2: runtime ─────────────────────────────────────────────</span>
+<span class="kw">FROM</span> python:3.12-slim <span class="kw">AS</span> runtime
+<span class="kw">WORKDIR</span> /app
+<span class="kw">ENV</span> PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
+<span class="kw">COPY</span> --from=builder /app/.venv /app/.venv
+<span class="kw">COPY</span> src/ ./src/
+
+<span class="kw">ENV</span> PATH="/app/.venv/bin:$PATH"
+<span class="kw">EXPOSE</span> 8000
+<span class="kw">CMD</span> ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]</pre>
+      </div>
+    </div>
+
+    <h3>Use .dockerignore</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">.dockerignore — baseline</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre>node_modules
+.next/cache
+dist
+.git
+.github
+.vscode
+coverage
+*.md
+.env*
+*.log
+__pycache__
+.DS_Store</pre>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-compose">10) Docker Compose — Multi-Container Apps</h2>
+
+    <p>
+      Docker Compose is the standard tool for defining and running multi-container
+      applications locally. A single <code>compose.yaml</code> file replaces
+      many <code>docker run</code> commands.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">yaml — compose.yaml (full-stack app)</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="lbl">name:</span> myapp
+
+<span class="lbl">services:</span>
+
+  <span class="lbl">api:</span>                           <span class="cm"># Node.js / Go / Python backend</span>
+    <span class="lbl">build:</span>
+      <span class="lbl">context:</span> ./backend
+      <span class="lbl">target:</span> runtime             <span class="cm"># multi-stage target</span>
+    <span class="lbl">image:</span> myapp/api:local
+    <span class="lbl">restart:</span> unless-stopped
+    <span class="lbl">ports:</span>
+      - <span class="st">"3000:3000"</span>
+    <span class="lbl">environment:</span>
+      NODE_ENV: production
+      DATABASE_URL: postgres://app:secret@db:5432/appdb
+      REDIS_URL: redis://cache:6379
+    <span class="lbl">depends_on:</span>
+      db:
+        <span class="lbl">condition:</span> service_healthy
+      cache:
+        <span class="lbl">condition:</span> service_started
+    <span class="lbl">deploy:</span>
+      <span class="lbl">resources:</span>
+        <span class="lbl">limits:</span>
+          <span class="lbl">cpus:</span> <span class="st">"1.5"</span>
+          <span class="lbl">memory:</span> 512M
+
+  <span class="lbl">frontend:</span>                      <span class="cm"># Angular / Next.js / React</span>
+    <span class="lbl">build:</span>
+      <span class="lbl">context:</span> ./frontend
+      <span class="lbl">target:</span> runtime
+    <span class="lbl">ports:</span>
+      - <span class="st">"8080:80"</span>
+    <span class="lbl">depends_on:</span>
+      - api
+
+  <span class="lbl">db:</span>
+    <span class="lbl">image:</span> postgres:16-alpine
+    <span class="lbl">restart:</span> unless-stopped
+    <span class="lbl">environment:</span>
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: appdb
+    <span class="lbl">volumes:</span>
+      - pgdata:/var/lib/postgresql/data
+    <span class="lbl">healthcheck:</span>
+      <span class="lbl">test:</span> ["CMD-SHELL", "pg_isready -U app -d appdb"]
+      <span class="lbl">interval:</span> 10s
+      <span class="lbl">retries:</span> 5
+
+  <span class="lbl">cache:</span>
+    <span class="lbl">image:</span> redis:7-alpine
+    <span class="lbl">restart:</span> unless-stopped
+    <span class="lbl">command:</span> redis-server --save 60 1 --loglevel warning
+
+<span class="lbl">volumes:</span>
+  pgdata:</pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash — Compose workflow</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="cm"># Start everything (build first if needed)</span>
+docker compose up -d --build
+
+<span class="cm"># Follow logs for all services</span>
+docker compose logs -f
+
+<span class="cm"># Scale a service</span>
+docker compose up -d --scale api=3
+
+<span class="cm"># Stop without removing volumes</span>
+docker compose stop
+
+<span class="cm"># Full teardown including volumes</span>
+docker compose down -v</pre>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-roles">11) Docker Usage Ideas by Role</h2>
+
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-icon">👩‍💻</div>
+        <h4>Developers</h4>
+        <ul>
+          <li>Local Postgres / Redis / MySQL</li>
+          <li>Full-stack app environments</li>
+          <li>Language/runtime isolation</li>
+          <li>Standardized local onboarding</li>
+          <li>Preview / test app containers</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">⚙️</div>
+        <h4>DevOps Engineers</h4>
+        <ul>
+          <li>CI image builds &amp; pipelines</li>
+          <li>Internal utility containers</li>
+          <li>Runner standardization</li>
+          <li>Image governance &amp; scanning</li>
+          <li>Reproducible delivery artifacts</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">☁️</div>
+        <h4>Cloud Engineers</h4>
+        <ul>
+          <li>Packaging services for clusters</li>
+          <li>Local validation pre-cloud</li>
+          <li>Sidecar &amp; startup testing</li>
+          <li>Lift-and-shift packaging</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">🛠️</div>
+        <h4>Operations Engineers</h4>
+        <ul>
+          <li>Support tooling &amp; exporters</li>
+          <li>Backup jobs &amp; schedulers</li>
+          <li>Internal dashboards</li>
+          <li>Maintenance utilities</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-kubernetes">12) Docker and Kubernetes: The Correct Modern Explanation</h2>
+
+    <p>
+      Modern Kubernetes expects a <strong>CRI-compatible runtime</strong> on
+      each node. The built-in dockershim was removed. Docker-built images
+      continue to work — the issue was the runtime interface, not the image
+      format.
+    </p>
+
+    <div class="callout callout-k8s">
+      <span class="callout-icon">☸️</span>
+      <div class="callout-body">
+        <p>
+          <strong>Key takeaway:</strong> Application developers usually define
+          image, env, ports, resources, and probes. Kubernetes runs those Pods
+          using whatever CRI runtime the cluster nodes are configured with —
+          you don't need to specify <code>containerd</code> or similar in
+          daily workloads.
+        </p>
+      </div>
+    </div>
+
+    <h3 id="section-k8s-deploy">Kubernetes Deployment</h3>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">yaml — k8s Deployment</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="lbl">apiVersion:</span> apps/v1
+<span class="lbl">kind:</span> Deployment
+<span class="lbl">metadata:</span>
+  <span class="lbl">name:</span> api-deployment
+  <span class="lbl">labels:</span>
+    <span class="lbl">app:</span> api
+<span class="lbl">spec:</span>
+  <span class="lbl">replicas:</span> <span class="nm">3</span>
+  <span class="lbl">selector:</span>
+    <span class="lbl">matchLabels:</span>
+      <span class="lbl">app:</span> api
+  <span class="lbl">strategy:</span>
+    <span class="lbl">type:</span> RollingUpdate
+    <span class="lbl">rollingUpdate:</span>
+      <span class="lbl">maxUnavailable:</span> <span class="nm">1</span>
+      <span class="lbl">maxSurge:</span> <span class="nm">1</span>
+  <span class="lbl">template:</span>
+    <span class="lbl">metadata:</span>
+      <span class="lbl">labels:</span>
+        <span class="lbl">app:</span> api
+    <span class="lbl">spec:</span>
+      <span class="lbl">containers:</span>
+        - <span class="lbl">name:</span> api
+          <span class="lbl">image:</span> myapp/api:1.0.0
+          <span class="lbl">imagePullPolicy:</span> IfNotPresent
+          <span class="lbl">ports:</span>
+            - <span class="lbl">containerPort:</span> <span class="nm">3000</span>
+          <span class="lbl">env:</span>
+            - <span class="lbl">name:</span> NODE_ENV
+              <span class="lbl">value:</span> production
+            - <span class="lbl">name:</span> DATABASE_URL
+              <span class="lbl">valueFrom:</span>
+                <span class="lbl">secretKeyRef:</span>
+                  <span class="lbl">name:</span> app-secrets
+                  <span class="lbl">key:</span> database-url
+          <span class="lbl">resources:</span>
+            <span class="lbl">requests:</span>
+              <span class="lbl">cpu:</span> <span class="st">"250m"</span>
+              <span class="lbl">memory:</span> <span class="st">"256Mi"</span>
+            <span class="lbl">limits:</span>
+              <span class="lbl">cpu:</span> <span class="st">"1"</span>
+              <span class="lbl">memory:</span> <span class="st">"512Mi"</span>
+          <span class="lbl">livenessProbe:</span>
+            <span class="lbl">httpGet:</span>
+              <span class="lbl">path:</span> /health
+              <span class="lbl">port:</span> <span class="nm">3000</span>
+            <span class="lbl">initialDelaySeconds:</span> <span class="nm">15</span>
+            <span class="lbl">periodSeconds:</span> <span class="nm">20</span>
+          <span class="lbl">readinessProbe:</span>
+            <span class="lbl">httpGet:</span>
+              <span class="lbl">path:</span> /ready
+              <span class="lbl">port:</span> <span class="nm">3000</span>
+            <span class="lbl">initialDelaySeconds:</span> <span class="nm">5</span>
+            <span class="lbl">periodSeconds:</span> <span class="nm">10</span></pre>
+    </div>
+
+    <h3 id="section-k8s-pod">Pod Configuration Reference</h3>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">yaml — Pod spec with security context &amp; volumes</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="lbl">apiVersion:</span> v1
+<span class="lbl">kind:</span> Pod
+<span class="lbl">metadata:</span>
+  <span class="lbl">name:</span> api-pod
+  <span class="lbl">labels:</span>
+    <span class="lbl">app:</span> api
+<span class="lbl">spec:</span>
+  <span class="lbl">securityContext:</span>
+    <span class="lbl">runAsNonRoot:</span> <span class="kw">true</span>
+    <span class="lbl">runAsUser:</span> <span class="nm">1001</span>
+    <span class="lbl">fsGroup:</span> <span class="nm">1001</span>
+
+  <span class="lbl">volumes:</span>
+    - <span class="lbl">name:</span> app-config
+      <span class="lbl">configMap:</span>
+        <span class="lbl">name:</span> api-config
+    - <span class="lbl">name:</span> tmp-volume
+      <span class="lbl">emptyDir:</span> {}
+
+  <span class="lbl">containers:</span>
+    - <span class="lbl">name:</span> api
+      <span class="lbl">image:</span> myapp/api:1.0.0
+      <span class="lbl">securityContext:</span>
+        <span class="lbl">allowPrivilegeEscalation:</span> <span class="kw">false</span>
+        <span class="lbl">readOnlyRootFilesystem:</span> <span class="kw">true</span>
+        <span class="lbl">capabilities:</span>
+          <span class="lbl">drop:</span> ["ALL"]
+      <span class="lbl">ports:</span>
+        - <span class="lbl">containerPort:</span> <span class="nm">3000</span>
+      <span class="lbl">volumeMounts:</span>
+        - <span class="lbl">name:</span> app-config
+          <span class="lbl">mountPath:</span> /app/config
+          <span class="lbl">readOnly:</span> <span class="kw">true</span>
+        - <span class="lbl">name:</span> tmp-volume
+          <span class="lbl">mountPath:</span> /tmp
+      <span class="lbl">resources:</span>
+        <span class="lbl">requests:</span>
+          <span class="lbl">memory:</span> <span class="st">"128Mi"</span>
+          <span class="lbl">cpu:</span> <span class="st">"100m"</span>
+        <span class="lbl">limits:</span>
+          <span class="lbl">memory:</span> <span class="st">"256Mi"</span>
+          <span class="lbl">cpu:</span> <span class="st">"500m"</span></pre>
+    </div>
+
+    <h3 id="section-k8s-init">Init Containers</h3>
+    <p>
+      Init containers run and complete <em>before</em> the main application
+      container starts. Common uses: wait for a database, migrate schemas,
+      fetch secrets, or pre-populate caches.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">yaml — Pod with init containers</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="lbl">apiVersion:</span> v1
+<span class="lbl">kind:</span> Pod
+<span class="lbl">metadata:</span>
+  <span class="lbl">name:</span> api-with-init
+<span class="lbl">spec:</span>
+
+  <span class="lbl">initContainers:</span>
+
+    <span class="cm"># 1. Wait for the database to be ready</span>
+    - <span class="lbl">name:</span> wait-for-db
+      <span class="lbl">image:</span> busybox:1.36
+      <span class="lbl">command:</span>
+        - sh
+        - -c
+        - |
+          until nc -z db-service 5432; do
+            echo "waiting for postgres..."; sleep 2;
+          done
+          echo "postgres is up"
+
+    <span class="cm"># 2. Run database migrations</span>
+    - <span class="lbl">name:</span> db-migrate
+      <span class="lbl">image:</span> myapp/api:1.0.0
+      <span class="lbl">command:</span> ["node", "dist/migrate.js"]
+      <span class="lbl">env:</span>
+        - <span class="lbl">name:</span> DATABASE_URL
+          <span class="lbl">valueFrom:</span>
+            <span class="lbl">secretKeyRef:</span>
+              <span class="lbl">name:</span> app-secrets
+              <span class="lbl">key:</span> database-url
+
+    <span class="cm"># 3. Fetch external configuration / secrets</span>
+    - <span class="lbl">name:</span> fetch-config
+      <span class="lbl">image:</span> curlimages/curl:8.5.0
+      <span class="lbl">command:</span>
+        - sh
+        - -c
+        - |
+          curl -sS https://config-service/api/config \
+            -H "Authorization: Bearer $TOKEN" \
+            -o /shared/app.json
+      <span class="lbl">volumeMounts:</span>
+        - <span class="lbl">name:</span> shared-config
+          <span class="lbl">mountPath:</span> /shared
+
+  <span class="lbl">containers:</span>
+    - <span class="lbl">name:</span> api
+      <span class="lbl">image:</span> myapp/api:1.0.0
+      <span class="lbl">ports:</span>
+        - <span class="lbl">containerPort:</span> <span class="nm">3000</span>
+      <span class="lbl">volumeMounts:</span>
+        - <span class="lbl">name:</span> shared-config
+          <span class="lbl">mountPath:</span> /app/config
+
+  <span class="lbl">volumes:</span>
+    - <span class="lbl">name:</span> shared-config
+      <span class="lbl">emptyDir:</span> {}</pre>
+    </div>
+
+    <h3>RuntimeClass — Choosing a Runtime Per Pod</h3>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">yaml — RuntimeClass for sandboxed workloads</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="cm"># Define the RuntimeClass (cluster admin task)</span>
+<span class="lbl">apiVersion:</span> node.k8s.io/v1
+<span class="lbl">kind:</span> RuntimeClass
+<span class="lbl">metadata:</span>
+  <span class="lbl">name:</span> gvisor
+<span class="lbl">handler:</span> runsc
+
+<span class="cm">---</span>
+<span class="cm"># Reference it in a Pod (workload owner task)</span>
+<span class="lbl">apiVersion:</span> v1
+<span class="lbl">kind:</span> Pod
+<span class="lbl">metadata:</span>
+  <span class="lbl">name:</span> sandboxed-api
+<span class="lbl">spec:</span>
+  <span class="lbl">runtimeClassName:</span> gvisor  <span class="cm"># ← select the runtime</span>
+  <span class="lbl">containers:</span>
+    - <span class="lbl">name:</span> api
+      <span class="lbl">image:</span> myapp/api:1.0.0</pre>
+    </div>
+
+    <div class="callout callout-k8s">
+      <span class="callout-icon">☸️</span>
+      <div class="callout-body">
+        <p>
+          <strong>RuntimeClass</strong> is a platform-level concern, not a
+          daily application task. Most teams never need to set
+          <code>runtimeClassName</code> — they rely on the cluster default.
+        </p>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-localK8s">13) Docker Desktop and Local Kubernetes</h2>
+
+    <p>
+      Docker Desktop can spin up a local Kubernetes cluster (single-node
+      <code>kubeadm</code> or <code>kind</code>-based multi-node), making it
+      ideal for learning Pods, Services, Deployments, and Ingress — and for
+      validating Helm charts or Kustomize flows before pushing to CI.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash — quick local Kubernetes test</span>
+        <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+      </div>
+      <pre><span class="cm"># Check context</span>
+kubectl config current-context   <span class="cm"># should show docker-desktop</span>
+
+<span class="cm"># Apply a deployment manifest</span>
+kubectl apply -f k8s/deployment.yaml
+
+<span class="cm"># Watch rollout</span>
+kubectl rollout status deployment/api-deployment
+
+<span class="cm"># Port-forward for local access</span>
+kubectl port-forward deployment/api-deployment 3000:3000
+
+<span class="cm"># Inspect events on failure</span>
+kubectl describe pod -l app=api
+kubectl logs -l app=api --tail=50</pre>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <h2 id="section-model">14) A Simple Practical Model for Teams</h2>
+
+    <table class="resource-table">
+      <thead>
+        <tr><th>Tool / Layer</th><th>Mainly for</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-blue">Docker CLI</span></td>
+          <td>Building images, running local containers, day-to-day workflow</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">Docker Engine</span></td>
+          <td>Host-level runtime, Linux server / CI runner operations</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">Docker Desktop</span></td>
+          <td>Workstation UX, resource tuning, optional local Kubernetes</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">Docker Compose</span></td>
+          <td>Multi-container local stacks, reproducible dev environments</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-orange">Kubernetes</span></td>
+          <td>Orchestration, scheduling, replicas, rollouts, self-healing</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">CRI / Node Runtime</span></td>
+          <td>Pull images, start/stop containers, kubelet interface</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <hr />
+
+    <h2>Final Practical View</h2>
+    <p>
+      The biggest Docker maturity gains come from a small set of consistent
+      habits — not advanced runtime tricks:
+    </p>
+
+    <ul class="checklist">
+      <li>Standard, reproducible Dockerfiles with multi-stage builds</li>
+      <li>Sensible CPU and memory limits on every container</li>
+      <li>Daemon-level logging rotation and cache garbage collection</li>
+      <li>Repeatable local Compose stacks for every service</li>
+      <li>Disciplined image refresh (<code>--pull</code>, <code>--no-cache</code>) and periodic pruning</li>
+      <li>Clear separation between developer concerns and platform/runtime concerns</li>
+    </ul>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">🚀</span>
+      <div class="callout-body">
+        <p>
+          <strong>Continue learning:</strong> Explore
+          <a href="./angular_node.md" target="_blank">Angular + Node containerization</a>
+          and
+          <a href="./nextjs_node.md" target="_blank">Next.js containerization</a>
+          in the companion modules.
+        </p>
+      </div>
+    </div>
+
+    <!-- References -->
+    <hr />
+    <h3>References</h3>
+    <ul style="font-size:0.88em; color:var(--text-muted);">
+      <li><a href="https://docs.docker.com/desktop/" target="_blank" rel="noopener">Docker Desktop Documentation</a></li>
+      <li><a href="https://docs.docker.com/engine/daemon/" target="_blank" rel="noopener">Docker Daemon Configuration</a></li>
+      <li><a href="https://docs.docker.com/build/building/best-practices/" target="_blank" rel="noopener">Docker Build Best Practices</a></li>
+      <li><a href="https://docs.docker.com/engine/manage-resources/pruning/" target="_blank" rel="noopener">Prune Unused Docker Objects</a></li>
+      <li><a href="https://docs.docker.com/build/buildkit/" target="_blank" rel="noopener">BuildKit</a></li>
+      <li><a href="https://kubernetes.io/docs/concepts/containers/runtime-class/" target="_blank" rel="noopener">Kubernetes RuntimeClass</a></li>
+      <li><a href="https://kubernetes.io/docs/concepts/containers/cri/" target="_blank" rel="noopener">Container Runtime Interface (CRI)</a></li>
+      <li><a href="https://kubernetes.io/blog/2020/12/02/dont-panic-kubernetes-and-docker/" target="_blank" rel="noopener">Don't Panic: Kubernetes and Docker</a></li>
+    </ul>
+
+  </main><!-- /article-container -->
+</div><!-- /page-wrapper -->
+
+<!-- Back to top -->
+<button id="back-to-top" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <p>
+    Container Learning Repository &mdash;
+    <a href="https://github.com/chefgs/container_reference" target="_blank" rel="noopener">View on GitHub</a>
+    &mdash; Built with plain HTML &amp; CSS
+  </p>
+</footer>
+
+<!-- ─── JavaScript ────────────────────────────────────────────── -->
+<script>
+  /* ── Theme toggle ─────────────────────────────────────────── */
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  if (savedTheme === 'dark') applyDark();
+
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) { document.documentElement.removeAttribute('data-theme'); themeToggle.textContent = '🌙 Dark'; localStorage.setItem('theme','light'); }
+    else         { applyDark(); }
+  });
+
+  function applyDark() {
+    document.documentElement.setAttribute('data-theme','dark');
+    themeToggle.textContent = '☀️ Light';
+    localStorage.setItem('theme','dark');
+  }
+
+  /* ── Reading progress bar ─────────────────────────────────── */
+  const progressBar = document.getElementById('reading-progress');
+  window.addEventListener('scroll', () => {
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    progressBar.style.width = (window.scrollY / total * 100) + '%';
+    document.getElementById('back-to-top').style.display = window.scrollY > 400 ? 'flex' : 'none';
+  });
+
+  /* ── TOC active link ──────────────────────────────────────── */
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-72px 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  /* ── Tab panels ───────────────────────────────────────────── */
+  function switchTab(btn, targetId) {
+    const bar = btn.closest('.tab-bar');
+    bar.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected','true');
+    const container = bar.parentElement;
+    container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    container.querySelector('#' + targetId).classList.add('active');
+  }
+
+  /* ── Copy to clipboard ────────────────────────────────────── */
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  /* ── Architecture info panel data ────────────────────────── */
+  const infoData = {
+    'host-os': {
+      title: 'Host Operating System',
+      body: `<p>The underlying OS where Docker runs — Linux, macOS (via a lightweight VM), or Windows (via WSL 2 or Hyper-V).</p>
+             <ul><li>Docker Engine runs natively on Linux</li><li>Docker Desktop adds a VM layer on Mac &amp; Windows</li><li>The host OS kernel is shared by all containers</li></ul>`
+    },
+    'dockerd': {
+      title: 'Docker Daemon (dockerd)',
+      body: `<p>The long-running background service that manages images, containers, networks, and volumes.</p>
+             <ul><li>Configured via <code>/etc/docker/daemon.json</code></li><li>Exposes a REST API used by the CLI</li><li>Controls BuildKit, logging, and GC policy</li></ul>`
+    },
+    'images': {
+      title: 'Docker Images',
+      body: `<p>Read-only layered templates built from a <code>Dockerfile</code>. Stored locally or in a registry.</p>
+             <ul><li>Built with <code>docker build</code></li><li>Tagged with name:version</li><li>Each layer is cached independently</li><li>Multi-stage builds keep runtime images small</li></ul>`
+    },
+    'buildkit': {
+      title: 'BuildKit',
+      body: `<p>The modern build backend used by Docker. Provides faster, more efficient builds than the legacy builder.</p>
+             <ul><li>Parallel stage execution</li><li>Better cache management</li><li>Secret mount support</li><li>Default since Docker 23.0</li></ul>`
+    },
+    'registry': {
+      title: 'Container Registry',
+      body: `<p>Remote storage for Docker images. Push and pull images between machines, CI runners, and clusters.</p>
+             <ul><li>Docker Hub (public default)</li><li>AWS ECR, Google GCR, Azure ACR</li><li>Self-hosted: Harbor, Nexus, Gitea</li><li>Configured in <code>daemon.json</code> for mirrors &amp; auth</li></ul>`
+    },
+    'container-app': {
+      title: 'App Container',
+      body: `<p>A running instance of your application image. Isolated via Linux namespaces and cgroups.</p>
+             <ul><li>Started with <code>docker run</code> or Compose</li><li>Gets its own filesystem, network, and PID namespace</li><li>Shares the host kernel — no hypervisor overhead</li><li>Set CPU/memory limits to prevent resource starvation</li></ul>`
+    },
+    'container-db': {
+      title: 'Database Container',
+      body: `<p>A containerized database for local development — Postgres, MySQL, MongoDB, etc.</p>
+             <ul><li>Data persisted via Docker volumes</li><li>Never prune volumes without checking for data</li><li>Use healthchecks in Compose to sequence startup</li></ul>`
+    },
+    'container-proxy': {
+      title: 'Proxy / Cache Container',
+      body: `<p>Nginx, Redis, or similar services running alongside your app container.</p>
+             <ul><li>Nginx: reverse proxy, static file serving, SSL termination</li><li>Redis: session cache, rate limiting, pub/sub</li><li>Use Compose <code>depends_on</code> to sequence startup</li></ul>`
+    },
+    'k8s-pod': {
+      title: 'Kubernetes Pod',
+      body: `<p>The smallest deployable unit in Kubernetes. Wraps one or more containers sharing a network namespace.</p>
+             <ul><li>Defined in a YAML manifest with <code>kind: Pod</code></li><li>Usually managed by a Deployment, not created directly</li><li>Supports init containers, sidecars, and volumes</li><li>Apply security contexts for non-root enforcement</li></ul>`
+    },
+    'k8s-deploy': {
+      title: 'Kubernetes Deployment',
+      body: `<p>Manages a ReplicaSet to ensure a desired number of Pod replicas are always running.</p>
+             <ul><li>Rolling updates with zero downtime</li><li>Automatic self-healing on Pod failure</li><li>Supports liveness &amp; readiness probes</li><li>Configure resource requests and limits per container</li></ul>`
+    },
+    'k8s-service': {
+      title: 'Kubernetes Service',
+      body: `<p>Stable network endpoint for a set of Pods selected by label.</p>
+             <ul><li><strong>ClusterIP</strong>: internal cluster access</li><li><strong>NodePort</strong>: exposes port on each node</li><li><strong>LoadBalancer</strong>: cloud load balancer</li><li>DNS name auto-assigned: <code>my-svc.namespace.svc.cluster.local</code></li></ul>`
+    },
+    'k8s-cri': {
+      title: 'CRI Runtime (containerd / CRI-O)',
+      body: `<p>The Container Runtime Interface implementation on each Kubernetes node — pulls images and starts containers for kubelet.</p>
+             <ul><li>containerd: default on most managed clusters</li><li>CRI-O: used in OpenShift</li><li>Docker Engine via cri-dockerd: legacy option</li><li>RuntimeClass lets workloads select a runtime</li></ul>`
+    }
+  };
+
+  function showInfo(key) {
+    const data = infoData[key];
+    if (!data) return;
+    document.getElementById('infoPanelTitle').textContent = data.title;
+    document.getElementById('infoPanelBody').innerHTML = data.body;
+    document.querySelectorAll('.block').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(`.block[onclick="showInfo('${key}')"]`).forEach(b => b.classList.add('active'));
+  }
+</script>
+</body>
+</html>
